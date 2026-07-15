@@ -18,10 +18,10 @@ const Login = ({ onAuthSuccess }) => {
     setError('');
     try {
       const data = await loginUser({ email, password });
-      alert(`Mubaarak ho! Login successful. Welcome, ${data.user.name} 🎉`);
+      alert(`Login successful. Welcome, ${data.user.name} 🎉`);
       if (onAuthSuccess) onAuthSuccess(data.user);
     } catch (err) {
-      setError(err.error || 'Login failed! Apni credentials check karein.');
+      setError(err.error || 'Login failed! Check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ const Login = ({ onAuthSuccess }) => {
     <div style={styles.container}>
       <div style={styles.card}>
         <h2 style={styles.heading}>Welcome Back</h2>
-        <p style={styles.subheading}>Apne Vyapar account me login karein</p>
+        <p style={styles.subheading}>Please login in your Business account</p>
 
         {error && <div style={styles.errorAlert}>{error}</div>}
 
