@@ -35,25 +35,31 @@ if (dbURI) {
 }
 
 // ==========================================
-// 4. CORS & MIDDLEWARES (CORRECT ORDER)
+// 4. CORS & MIDDLEWARES (FINAL FIX)
 // ==========================================
-// Helmet ko sabse pehle allow-origin ke sath lagao
+// Dynamic origin handling (Vercel ke kisi bhi URL/Domain ko allow karne ke liye)
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Postman / Server-to-Server requests (jahan origin null hota hai) aur saare frontend origins allow karo
+        if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Fallback: kisi bhi domain se block na ho
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    optionsSuccessStatus: 200 // Older browsers support ke liye
+};
+
+// CORS ko Helmet se bilkul pehle apply karo
+app.use(cors(corsOptions));
+
+// Pre-flight OPTIONS request handling sabhi routes par
+app.options('*', cors(corsOptions));
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
-
-// Pure Express level par manual CORS headers force karo
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    // Preflight OPTIONS request ko turant 200 OK do
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
-
-app.use(cors());
 app.use(express.json());
 
 // ==========================================
