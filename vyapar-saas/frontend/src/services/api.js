@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Backend ka base URL (Aapka port 5000 hai)
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 });
 
 // Request Interceptor: Agar user logged in hai, toh har request ke header me Token automatic chala jaye
