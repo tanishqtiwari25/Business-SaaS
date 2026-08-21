@@ -4,16 +4,15 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Agar future mein .env chalana ho toh uski config
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 // ==========================================
-// 2. MODULE IMPORTS (Sabhse Pehle Imports)
+// 2. MODULE IMPORTS
 // ==========================================
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const connectDB = require('./config/db'); // Ab ye import pehle ho gaya hai!
+const connectDB = require('./config/db');
 
 // Routes Imports
 const productRoutes = require('./routes/productRoutes');
@@ -26,35 +25,46 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 // ==========================================
 const app = express();
 
-// Direct bypass connection string agar .env nahi chal raha toh
-const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:Ramandatabasehh@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
-
-// Database connect karo (Pehle .env check karega, nahi toh direct link use karega)
-const dbURI = process.env.MONGO_URI || MONGO_URI_DIRECT;
+// Database connection via Environment Variable
+const dbURI = process.env.MONGO_URI;
 
 if (dbURI) {
-    connectDB(dbURI); // Sahi tarike se connect call
+    connectDB(dbURI);
 } else {
-    console.error("❌ ERROR: Database URI nahi mil payi!");
+    console.error("❌ ERROR: MONGO_URI environment variable is missing!");
 }
 
-// Middlewares
-app.use(helmet());
-app.use(cors());
+// ==========================================
+// 4. MIDDLEWARES (CORS & Security Fixes)
+// ==========================================
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+}));
+
 app.use(express.json());
 
 // ==========================================
-// 4. API ROUTES
+// 5. API ROUTES
 // ==========================================
+app.get('/', (req, res) => {
+    res.send('API is running successfully...');
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/purchases', purchaseRoutes);
 
 // ==========================================
-// 5. SERVER START
+// 6. SERVER START
 // ==========================================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Production Architecture listening on port ${PORT}`);
 });
