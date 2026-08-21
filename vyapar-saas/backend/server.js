@@ -27,7 +27,7 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 const app = express();
 
 // Direct bypass connection string agar .env nahi chal raha toh
-const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:alongwithbase@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
+const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:Ramandatabasehh@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
 
 // Database connect karo (Pehle .env check karega, nahi toh direct link use karega)
 const dbURI = process.env.MONGO_URI || MONGO_URI_DIRECT;
