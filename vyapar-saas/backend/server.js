@@ -55,6 +55,6 @@ app.use('/api/purchases', purchaseRoutes);
 // 5. SERVER START
 // ==========================================
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Production Architecture listening on port ${PORT}`);
 });
