@@ -24,10 +24,11 @@ const UserSchema = new mongoose.Schema({
   refreshToken: { type: String }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+// ✅ Modern Async Pre-save Hook (No 'next' required!)
+UserSchema.pre('save', async function() {
+  if (!this.isModified('password')) return; // Agar password change nahi hua toh yahin se return ho jao
+  
+  this.password = await bcrypt.hash(this.password, 12); // Password hash karo aur save kar do
 });
 
 UserSchema.methods.comparePassword = async function(candidatePassword) {
