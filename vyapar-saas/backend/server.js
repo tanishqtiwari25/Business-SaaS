@@ -1,5 +1,5 @@
 // ==========================================
-// 1. DOTENV CONFIGURATION (Top Priority)
+// 1. DOTENV CONFIGURATION
 // ==========================================
 const path = require('path');
 const dotenv = require('dotenv');
@@ -25,28 +25,35 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 // ==========================================
 const app = express();
 
-// Database connection via Environment Variable
-const dbURI = process.env.MONGO_URI;
+const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:Ramandatabasehh@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
+const dbURI = process.env.MONGO_URI || MONGO_URI_DIRECT;
 
 if (dbURI) {
     connectDB(dbURI);
 } else {
-    console.error("❌ ERROR: MONGO_URI environment variable is missing!");
+    console.error("❌ ERROR: Database URI nahi mil payi!");
 }
 
 // ==========================================
-// 4. MIDDLEWARES (CORS & Security Fixes)
+// 4. CORS & MIDDLEWARES (CORRECT ORDER)
 // ==========================================
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Helmet ko sabse pehle allow-origin ke sath lagao
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
-app.use(helmet({
-    crossOriginResourcePolicy: false,
-}));
+// Pure Express level par manual CORS headers force karo
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    // Preflight OPTIONS request ko turant 200 OK do
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
+app.use(cors());
 app.use(express.json());
 
 // ==========================================
