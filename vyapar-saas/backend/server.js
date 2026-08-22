@@ -28,58 +28,35 @@ const purchaseRoutes = require("./routes/purchaseRoutes");
 const app = express();
 
 // ==========================================
-// 4. DATABASE CONNECTION
+// 4. CORS
 // ==========================================
-const dbURI = process.env.MONGO_URI;
-
-if (!dbURI) {
-    console.error("❌ ERROR: MONGO_URI environment variable nahi mili!");
-    process.exit(1);
-}
-
-connectDB(dbURI);
-
-// ==========================================
-// 5. CORS CONFIGURATION
-// ==========================================
-
-// Production frontend
 const allowedOrigins = [
     "https://business-saa-s-w3pr-smoky.vercel.app",
-
-    // Local development
     "http://localhost:5173",
     "http://localhost:3000",
 ];
 
-// CORS middleware
 app.use(
     cors({
         origin: function (origin, callback) {
-
-            // Postman / server-to-server requests
             if (!origin) {
                 return callback(null, true);
             }
 
-            // Exact allowed origins
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
 
-            // Vercel preview deployments
             if (
-                origin.endsWith(".vercel.app") &&
-                origin.startsWith("https://")
+                origin.startsWith("https://") &&
+                origin.endsWith(".vercel.app")
             ) {
                 return callback(null, true);
             }
 
             console.log("❌ CORS blocked origin:", origin);
 
-            return callback(
-                new Error("Not allowed by CORS")
-            );
+            return callback(new Error("Not allowed by CORS"));
         },
 
         credentials: true,
@@ -105,7 +82,7 @@ app.use(
 );
 
 // ==========================================
-// 6. SECURITY MIDDLEWARE
+// 5. SECURITY
 // ==========================================
 app.use(
     helmet({
@@ -114,12 +91,12 @@ app.use(
 );
 
 // ==========================================
-// 7. BODY PARSER
+// 6. BODY PARSER
 // ==========================================
 app.use(express.json());
 
 // ==========================================
-// 8. HEALTH CHECK
+// 7. HEALTH CHECK
 // ==========================================
 app.get("/", (req, res) => {
     res.status(200).json({
@@ -129,18 +106,15 @@ app.get("/", (req, res) => {
 });
 
 // ==========================================
-// 9. API ROUTES
+// 8. API ROUTES
 // ==========================================
 app.use("/api/auth", authRoutes);
-
 app.use("/api/products", productRoutes);
-
 app.use("/api/sync", syncRoutes);
-
 app.use("/api/purchases", purchaseRoutes);
 
 // ==========================================
-// 10. 404 HANDLER
+// 9. 404 HANDLER
 // ==========================================
 app.use((req, res) => {
     res.status(404).json({
@@ -150,12 +124,11 @@ app.use((req, res) => {
 });
 
 // ==========================================
-// 11. GLOBAL ERROR HANDLER
+// 10. GLOBAL ERROR HANDLER
 // ==========================================
 app.use((err, req, res, next) => {
     console.error("❌ Server Error:", err.message);
 
-    // CORS error
     if (err.message === "Not allowed by CORS") {
         return res.status(403).json({
             success: false,
@@ -170,14 +143,35 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// 12. SERVER START
+// 11. START SERVER
 // ==========================================
 const PORT = process.env.PORT || 10000;
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log("==========================================");
-    console.log("🚀 Vyapar SaaS Backend Started");
-    console.log(`🌐 Port: ${PORT}`);
-    console.log("🔐 CORS: Enabled");
-    console.log("==========================================");
-});
+const startServer = async () => {
+    try {
+        const dbURI = process.env.MONGO_URI;
+
+        if (!dbURI) {
+            throw new Error("MONGO_URI environment variable nahi mili.");
+        }
+
+        // Database connect hone ke baad server start hoga
+        await connectDB(dbURI);
+
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log("==========================================");
+            console.log("🚀 Vyapar SaaS Backend Started");
+            console.log(`🌐 Server running on port ${PORT}`);
+            console.log("🍃 MongoDB connected");
+            console.log("🔐 CORS enabled");
+            console.log("==========================================");
+        });
+    } catch (error) {
+        console.error("❌ SERVER STARTUP FAILED:");
+        console.error(error.message);
+
+        process.exit(1);
+    }
+};
+
+startServer();
