@@ -25,7 +25,7 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 // ==========================================
 const app = express();
 
-const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:Ramandatabasehh@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
+const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:Ramanpoiuy@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
 const dbURI = process.env.MONGO_URI || MONGO_URI_DIRECT;
 
 if (dbURI) {
