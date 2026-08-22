@@ -1,83 +1,183 @@
 // ==========================================
 // 1. DOTENV CONFIGURATION
 // ==========================================
-const path = require('path');
-const dotenv = require('dotenv');
+const path = require("path");
+const dotenv = require("dotenv");
 
-dotenv.config({ path: path.join(process.cwd(), '.env') });
+dotenv.config({
+    path: path.join(process.cwd(), ".env"),
+});
 
 // ==========================================
 // 2. MODULE IMPORTS
 // ==========================================
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const connectDB = require('./config/db');
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const connectDB = require("./config/db");
 
-// Routes Imports
-const productRoutes = require('./routes/productRoutes');
-const authRoutes = require('./routes/authRoutes');
-const syncRoutes = require('./routes/syncRoutes');
-const purchaseRoutes = require('./routes/purchaseRoutes');
+// Routes
+const productRoutes = require("./routes/productRoutes");
+const authRoutes = require("./routes/authRoutes");
+const syncRoutes = require("./routes/syncRoutes");
+const purchaseRoutes = require("./routes/purchaseRoutes");
 
 // ==========================================
-// 3. APPLICATION SETUP & DATABASE
+// 3. APPLICATION SETUP
 // ==========================================
 const app = express();
 
-const MONGO_URI_DIRECT = "mongodb+srv://realtanishqtiwari:Ramanpoiuy@cluster0.lntmazo.mongodb.net/?appName=Cluster0";
-const dbURI = process.env.MONGO_URI || MONGO_URI_DIRECT;
+// ==========================================
+// 4. DATABASE CONNECTION
+// ==========================================
+const dbURI = process.env.MONGO_URI;
 
-if (dbURI) {
-    connectDB(dbURI);
-} else {
-    console.error("❌ ERROR: Database URI nahi mil payi!");
+if (!dbURI) {
+    console.error("❌ ERROR: MONGO_URI environment variable nahi mili!");
+    process.exit(1);
 }
 
+connectDB(dbURI);
+
 // ==========================================
-// 4. CORS & MIDDLEWARES (FINAL FIX)
+// 5. CORS CONFIGURATION
 // ==========================================
-// Dynamic origin handling (Vercel ke kisi bhi URL/Domain ko allow karne ke liye)
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Postman / Server-to-Server requests (jahan origin null hota hai) aur saare frontend origins allow karo
-        if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
-            callback(null, true);
-        } else {
-            callback(null, true); // Fallback: kisi bhi domain se block na ho
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    optionsSuccessStatus: 200 // Older browsers support ke liye
-};
 
-// CORS ko Helmet se bilkul pehle apply karo
-app.use(cors(corsOptions));
+// Production frontend
+const allowedOrigins = [
+    "https://business-saa-s-w3pr-smoky.vercel.app",
 
-// Pre-flight OPTIONS request handling sabhi routes par
-app.options('*', cors(corsOptions));
+    // Local development
+    "http://localhost:5173",
+    "http://localhost:3000",
+];
 
-app.use(helmet({ crossOriginResourcePolicy: false }));
+// CORS middleware
+app.use(
+    cors({
+        origin: function (origin, callback) {
+
+            // Postman / server-to-server requests
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            // Exact allowed origins
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            // Vercel preview deployments
+            if (
+                origin.endsWith(".vercel.app") &&
+                origin.startsWith("https://")
+            ) {
+                return callback(null, true);
+            }
+
+            console.log("❌ CORS blocked origin:", origin);
+
+            return callback(
+                new Error("Not allowed by CORS")
+            );
+        },
+
+        credentials: true,
+
+        methods: [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+        ],
+
+        allowedHeaders: [
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "Accept",
+        ],
+
+        optionsSuccessStatus: 204,
+    })
+);
+
+// ==========================================
+// 6. SECURITY MIDDLEWARE
+// ==========================================
+app.use(
+    helmet({
+        crossOriginResourcePolicy: false,
+    })
+);
+
+// ==========================================
+// 7. BODY PARSER
+// ==========================================
 app.use(express.json());
 
 // ==========================================
-// 5. API ROUTES
+// 8. HEALTH CHECK
 // ==========================================
-app.get('/', (req, res) => {
-    res.send('API is running successfully...');
+app.get("/", (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "Vyapar SaaS API is running successfully 🚀",
+    });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/purchases', purchaseRoutes);
+// ==========================================
+// 9. API ROUTES
+// ==========================================
+app.use("/api/auth", authRoutes);
+
+app.use("/api/products", productRoutes);
+
+app.use("/api/sync", syncRoutes);
+
+app.use("/api/purchases", purchaseRoutes);
 
 // ==========================================
-// 6. SERVER START
+// 10. 404 HANDLER
+// ==========================================
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `Route not found: ${req.method} ${req.originalUrl}`,
+    });
+});
+
+// ==========================================
+// 11. GLOBAL ERROR HANDLER
+// ==========================================
+app.use((err, req, res, next) => {
+    console.error("❌ Server Error:", err.message);
+
+    // CORS error
+    if (err.message === "Not allowed by CORS") {
+        return res.status(403).json({
+            success: false,
+            message: "CORS policy blocked this request.",
+        });
+    }
+
+    res.status(err.status || 500).json({
+        success: false,
+        message: err.message || "Internal Server Error",
+    });
+});
+
+// ==========================================
+// 12. SERVER START
 // ==========================================
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Production Architecture listening on port ${PORT}`);
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log("==========================================");
+    console.log("🚀 Vyapar SaaS Backend Started");
+    console.log(`🌐 Port: ${PORT}`);
+    console.log("🔐 CORS: Enabled");
+    console.log("==========================================");
 });
