@@ -1,37 +1,28 @@
-import { openDB } from 'idb'; // Lightweight promise wrapper wrapper for IndexedDB
+const mongoose = require("mongoose");
 
-const DB_NAME = 'VyaparOfflineDB';
-const STORE_PRODUCTS = 'products';
-const STORE_SYNC_QUEUE = 'syncQueue';
+const connectDB = async (connectionString) => {
+    try {
+        if (!connectionString) {
+            throw new Error("MONGO_URI environment variable nahi mili.");
+        }
 
-export const initDB = async () => {
-  return openDB(DB_NAME, 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(STORE_PRODUCTS)) {
-        db.createObjectStore(STORE_PRODUCTS, { keyPath: 'sku' });
-      }
-      if (!db.objectStoreNames.contains(STORE_SYNC_QUEUE)) {
-        db.createObjectStore(STORE_SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
-      }
-    },
-  });
+        console.log("⏳ MongoDB connect karne ki koshish chal rahi hai...");
+
+        const conn = await mongoose.connect(connectionString, {
+            serverSelectionTimeoutMS: 10000,
+        });
+
+        console.log(
+            `🍃 MongoDB Connected Successfully: ${conn.connection.host} ✅`
+        );
+
+        return conn;
+    } catch (error) {
+        console.error("❌ DATABASE CONNECTION FAILED:");
+        console.error(error.message);
+
+        throw error;
+    }
 };
 
-export const saveProductOffline = async (product) => {
-  const db = await initDB();
-  await db.put(STORE_PRODUCTS, product);
-  
-  // Queue changes for Sync engine
-  await db.put(STORE_SYNC_QUEUE, {
-    id: `${Date.now()}_${product.sku}`,
-    action: 'UPDATE',
-    collection: 'products',
-    data: product,
-    timestamp: new Date()
-  });
-};
-
-export const getOfflineProducts = async () => {
-  const db = await initDB();
-  return db.getAll(STORE_PRODUCTS);
-};
+module.exports = connectDB;
