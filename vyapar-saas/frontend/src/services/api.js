@@ -1,53 +1,115 @@
 import axios from 'axios';
 
-// Backend ka base URL (Aapka port 5000 hai)
+// ==========================================
+// API CONFIGURATION
+// ==========================================
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    'https://business-saas.onrender.com/api',
+
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Request Interceptor: Agar user logged in hai, toh har request ke header me Token automatic chala jaye
-API.interceptors.request.use((config) => {
-  const profile = localStorage.getItem('user');
-  if (profile) {
-    const { token } = JSON.parse(profile);
-    config.headers.Authorization = `Bearer ${token}`;
+// ==========================================
+// REQUEST INTERCEPTOR
+// ==========================================
+
+API.interceptors.request.use(
+  (config) => {
+    const profile = localStorage.getItem('user');
+
+    if (profile) {
+      try {
+        const userData = JSON.parse(profile);
+
+        if (userData?.token) {
+          config.headers.Authorization = `Bearer ${userData.token}`;
+        }
+      } catch (error) {
+        console.error('Invalid user data in localStorage:', error);
+        localStorage.removeItem('user');
+      }
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 // ==========================================
-// AUTHENTICATION APIS
+// REGISTER
 // ==========================================
 
-// 1. Register API
 export const registerUser = async (userData) => {
   try {
+    console.log('📤 Register request:', userData);
+
     const response = await API.post('/auth/register', userData);
-    if (response.data.token) {
+
+    console.log('📥 Register response:', response.data);
+
+    if (response.data?.token) {
       localStorage.setItem('user', JSON.stringify(response.data));
     }
+
     return response.data;
+
   } catch (error) {
-    throw error.response ? error.response.data : new Error("Registration Failed!");
+    console.error('❌ Registration error:', error);
+
+    if (error.response) {
+      throw error.response.data;
+    }
+
+    throw new Error(
+      error.message || 'Registration failed!'
+    );
   }
 };
 
-// 2. Login API
+// ==========================================
+// LOGIN
+// ==========================================
+
 export const loginUser = async (credentials) => {
   try {
     const response = await API.post('/auth/login', credentials);
-    if (response.data.token) {
+
+    if (response.data?.token) {
       localStorage.setItem('user', JSON.stringify(response.data));
     }
+
     return response.data;
+
   } catch (error) {
-    throw error.response ? error.response.data : new Error("Login Failed!");
+    console.error('❌ Login error:', error);
+
+    if (error.response) {
+      throw error.response.data;
+    }
+
+    throw new Error(
+      error.message || 'Login failed!'
+    );
   }
 };
 
-// 3. Logout Helper
+// ==========================================
+// LOGOUT
+// ==========================================
+
 export const logoutUser = () => {
   localStorage.removeItem('user');
 };
+
+// ==========================================
+// EXPORT
+// ==========================================
 
 export default API;

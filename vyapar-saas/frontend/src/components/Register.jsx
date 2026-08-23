@@ -6,27 +6,54 @@ const Register = ({ onAuthSuccess }) => {
     name: '',
     email: '',
     password: '',
-    role: 'Owner', // Default role
+    role: 'Owner',
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { name, email, password, role } = formData;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+
     setError('');
+    setLoading(true);
+
     try {
-      const data = await registerUser({ name, email, password, role });
-      alert(`Mubaarak ho! Registration successful. Welcome, ${data.user.name} 🎉`);
-      if (onAuthSuccess) onAuthSuccess(data.user);
+      const data = await registerUser({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        role,
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.message || 'Registration failed');
+      }
+
+      alert(
+        `Mubaarak ho! Registration successful. Welcome, ${data.user.name} 🎉`
+      );
+
+      if (onAuthSuccess) {
+        onAuthSuccess(data.user);
+      }
     } catch (err) {
-      setError(err.error || 'Registration failed! Try again.');
+      console.error('❌ Registration Error:', err);
+
+      setError(
+        err?.message ||
+        err?.error ||
+        'Registration failed! Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -36,13 +63,25 @@ const Register = ({ onAuthSuccess }) => {
     <div style={styles.container}>
       <div style={styles.card}>
         <h2 style={styles.heading}>Create Account</h2>
-        <p style={styles.subheading}>Vyapar SaaS system me judiye</p>
 
-        {error && <div style={styles.errorAlert}>{error}</div>}
+        <p style={styles.subheading}>
+          Vyapar SaaS system me judiye
+        </p>
+
+        {error && (
+          <div style={styles.errorAlert}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={styles.form}>
+
+          {/* NAME */}
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Full Name</label>
+            <label style={styles.label}>
+              Full Name
+            </label>
+
             <input
               type="text"
               name="name"
@@ -54,8 +93,12 @@ const Register = ({ onAuthSuccess }) => {
             />
           </div>
 
+          {/* EMAIL */}
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Email Address</label>
+            <label style={styles.label}>
+              Email Address
+            </label>
+
             <input
               type="email"
               name="email"
@@ -67,21 +110,30 @@ const Register = ({ onAuthSuccess }) => {
             />
           </div>
 
+          {/* PASSWORD */}
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
+            <label style={styles.label}>
+              Password
+            </label>
+
             <input
               type="password"
               name="password"
               value={password}
               onChange={handleChange}
               placeholder="••••••••"
+              minLength={6}
               required
               style={styles.input}
             />
           </div>
 
+          {/* ROLE */}
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Your Role</label>
+            <label style={styles.label}>
+              Your Role
+            </label>
+
             <select
               name="role"
               value={role}
@@ -89,30 +141,42 @@ const Register = ({ onAuthSuccess }) => {
               style={styles.select}
             >
               <option value="Owner">Owner</option>
-              <option value="Employee">Employee</option>
-              <option value="Manager">Manager</option>
+              <option value="Staff">Staff</option>
             </select>
           </div>
 
-          <button type="submit" disabled={loading} style={styles.button}>
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...styles.button,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
+
         </form>
       </div>
     </div>
   );
 };
 
-// Same theme matching Register page styles
 const styles = {
   container: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    height: '100vh',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+    minHeight: '100vh',
+    padding: '20px',
+    background:
+      'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
     fontFamily: "'Inter', sans-serif",
+    boxSizing: 'border-box',
   },
+
   card: {
     background: 'rgba(255, 255, 255, 0.03)',
     backdropFilter: 'blur(12px)',
@@ -121,28 +185,34 @@ const styles = {
     padding: '40px',
     width: '100%',
     maxWidth: '400px',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.37)',
     textAlign: 'center',
+    boxSizing: 'border-box',
   },
+
   heading: {
     color: '#ffffff',
     fontSize: '28px',
     fontWeight: 'bold',
     marginBottom: '8px',
   },
+
   subheading: {
     color: '#94a3b8',
     fontSize: '14px',
     marginBottom: '24px',
   },
+
   form: {
     display: 'flex',
     flexDirection: 'column',
     gap: '16px',
   },
+
   inputGroup: {
     textAlign: 'left',
   },
+
   label: {
     display: 'block',
     color: '#cbd5e1',
@@ -151,6 +221,7 @@ const styles = {
     marginBottom: '6px',
     textTransform: 'uppercase',
   },
+
   input: {
     width: '100%',
     padding: '12px 16px',
@@ -162,6 +233,7 @@ const styles = {
     outline: 'none',
     boxSizing: 'border-box',
   },
+
   select: {
     width: '100%',
     padding: '12px 16px',
@@ -174,18 +246,20 @@ const styles = {
     boxSizing: 'border-box',
     cursor: 'pointer',
   },
+
   button: {
     width: '100%',
     padding: '12px',
-    background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
+    background:
+      'linear-gradient(90deg, #10b981 0%, #059669 100%)',
     color: '#ffffff',
     border: 'none',
     borderRadius: '8px',
     fontSize: '16px',
     fontWeight: 'bold',
-    cursor: 'pointer',
     marginTop: '12px',
   },
+
   errorAlert: {
     background: 'rgba(239, 68, 68, 0.2)',
     border: '1px solid #ef4444',
@@ -195,7 +269,7 @@ const styles = {
     fontSize: '13px',
     marginBottom: '16px',
     textAlign: 'left',
-  }
+  },
 };
 
 export default Register;
